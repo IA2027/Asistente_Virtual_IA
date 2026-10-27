@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panel de administración</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; background: #123c8c; color: white;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+        header {
+            padding: 22px 4%; border-bottom: 1px solid #4775bd;
+            display: flex; justify-content: space-between;
+            align-items: center; gap: 14px; flex-wrap: wrap;
+        }
+        h1 { margin: 0; color: #ef3038; }
+        main { width: 94%; max-width: 1200px; margin: 26px auto; }
+        .stats {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 12px; margin-bottom: 22px;
+        }
+        .stat, .table-wrap {
+            background: #0c2d6b; border: 1px solid #4775bd;
+            border-radius: 12px; padding: 16px;
+        }
+        .stat strong { display: block; font-size: 26px; margin-top: 8px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        th, td {
+            padding: 12px; text-align: left;
+            border-bottom: 1px solid #315795;
+        }
+        th { color: #dce7ff; }
+        select, button, .link {
+            padding: 9px; border-radius: 6px; border: 0;
+        }
+        select { max-width: 125px; }
+        button {
+            background: #ef3038; color: white;
+            cursor: pointer; font-weight: 600;
+        }
+        .link { color: white; text-decoration: none; background: #1c55b8; }
+        .logout { display: inline; }
+        .logout button { background: #1c55b8; }
+        .empty { padding: 20px; }
+        .note { color: #dce7ff; font-size: 13px; line-height: 1.5; }
+        @media (max-width: 650px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            h1 { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Recepcionista Virtual</h1>
+        <div>
+            <a class="link" href="/">Volver al chat</a>
+            <form class="logout" action="/admin/logout" method="post">
+                <button type="submit">Cerrar sesión</button>
+            </form>
+        </div>
+    </header>
+
+    <main>
+        <h2>Panel de turnos — {{ clinic_name }}</h2>
+
+        <section class="stats">
+            <div class="stat">Total de solicitudes<strong>{{ total }}</strong></div>
+            <div class="stat">Pendientes<strong>{{ pendientes }}</strong></div>
+            <div class="stat">Aprobadas<strong>{{ aprobados }}</strong></div>
+            <div class="stat">Rechazadas<strong>{{ rechazados }}</strong></div>
+        </section>
+
+        <section class="table-wrap">
+            {% if turnos %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Paciente</th>
+                        <th>Especialidad</th>
+                        <th>Fecha solicitada</th>
+                        <th>Hora</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for turno in turnos %}
+                    <tr>
+                        <td>{{ turno.id }}</td>
+                        <td>{{ turno.patient_name }}</td>
+                        <td>{{ turno.specialty }}</td>
+                        <td>{{ turno.appointment_date }}</td>
+                        <td>{{ turno.appointment_time }}</td>
+                        <td>{{ turno.status }}</td>
+                        <td>
+                            <form method="post"
+                                  action="/admin/turno/{{ turno.id }}">
+                                <select name="status" aria-label="Nuevo estado">
+                                    <option value="Pendiente"
+                                        {% if turno.status == "Pendiente" %}selected{% endif %}>
+                                        Pendiente
+                                    </option>
+                                    <option value="Aprobado"
+                                        {% if turno.status == "Aprobado" %}selected{% endif %}>
+                                        Aprobado
+                                    </option>
+                                    <option value="Rechazado"
+                                        {% if turno.status == "Rechazado" %}selected{% endif %}>
+                                        Rechazado
+                                    </option>
+                                </select>
+                                <button type="submit">Guardar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <p class="empty">Todavía no hay solicitudes registradas.</p>
+            {% endif %}
+        </section>
+
+        <p class="note">
+            "Aprobado" indica una revisión administrativa de la solicitud;
+            no confirma disponibilidad real en una agenda médica.
+        </p>
+    </main>
+</body>
+</html>

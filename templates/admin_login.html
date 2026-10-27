@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acceso administrativo</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: grid; place-items: center;
+            background: #123c8c; color: white;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+        .card {
+            width: min(390px, 92%); padding: 28px;
+            background: #0c2d6b; border: 1px solid #4775bd;
+            border-radius: 14px;
+        }
+        h1 { color: #ef3038; font-size: 25px; }
+        label { display: block; margin: 18px 0 8px; }
+        input {
+            width: 100%; padding: 13px; border-radius: 8px;
+            border: 1px solid #4775bd; font-size: 16px;
+        }
+        button {
+            width: 100%; margin-top: 16px; padding: 13px;
+            background: #ef3038; color: white; border: 0;
+            border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        a { color: white; display: inline-block; margin-top: 18px; }
+        .error { color: #ffb8bc; }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <h1>Recepcionista Virtual</h1>
+        <p>Panel de administración</p>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <form method="post">
+            <label for="password">Contraseña de administrador</label>
+            <input id="password" name="password" type="password"
+                   autocomplete="current-password" required>
+            <button type="submit">Ingresar</button>
+        </form>
+
+        <a href="/">Volver al chat</a>
+    </main>
+</body>
+</html>

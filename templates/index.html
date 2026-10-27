@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recepcionista Virtual</title>
+
+    <style>
+        :root {
+            --azul: #123c8c;
+            --azul-claro: #1c55b8;
+            --rojo: #ef3038;
+            --blanco: #ffffff;
+            --panel: #0c2d6b;
+            --borde: #4775bd;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--azul);
+            color: var(--blanco);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 22px 16px;
+            border-bottom: 1px solid var(--borde);
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--rojo);
+            font-size: clamp(24px, 4vw, 34px);
+            letter-spacing: 1px;
+        }
+
+        header p {
+            margin: 8px 0 0;
+            color: #dce7ff;
+        }
+
+        .container {
+            width: min(760px, 94%);
+            margin: 24px auto;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .chat {
+            background: var(--panel);
+            border: 1px solid var(--borde);
+            border-radius: 14px;
+            padding: 18px;
+            min-height: 350px;
+            max-height: 58vh;
+            overflow-y: auto;
+        }
+
+        .message {
+            padding: 12px 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            max-width: 88%;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .assistant {
+            background: #19458e;
+            border: 1px solid #527ec3;
+            margin-right: auto;
+        }
+
+        .user {
+            background: #ffffff;
+            color: #102d61;
+            margin-left: auto;
+        }
+
+        .composer {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 14px;
+            border-radius: 9px;
+            border: 1px solid var(--borde);
+            font-size: 16px;
+            color: #172b4d;
+        }
+
+        button, .admin-link {
+            border: 0;
+            border-radius: 9px;
+            background: var(--rojo);
+            color: white;
+            font-weight: 600;
+            padding: 13px 18px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        button:disabled { opacity: .6; cursor: wait; }
+
+        .secondary {
+            display: inline-block;
+            margin-top: 14px;
+            background: var(--azul-claro);
+            border: 1px solid #8fb5ff;
+        }
+
+        .notice {
+            color: #dce7ff;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 14px;
+        }
+
+        @media (max-width: 520px) {
+            .composer { flex-direction: column; }
+            .composer button { width: 100%; }
+            .chat { min-height: 300px; }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Recepcionista Virtual</h1>
+        <p>{{ clinic_name }}</p>
+    </header>
+
+    <main class="container">
+        <div class="chat" id="chat" aria-live="polite">
+            <div class="message assistant">
+                ¡Hola! Soy la recepcionista virtual.
+                Puedo responder consultas generales y registrar solicitudes
+                de turnos. ¿En qué puedo ayudarte?
+            </div>
+        </div>
+
+        <form class="composer" id="chat-form">
+            <input
+                id="message"
+                type="text"
+                maxlength="2000"
+                placeholder="Escribí tu consulta..."
+                autocomplete="off"
+                required
+            >
+            <button id="send" type="submit">Enviar</button>
+        </form>
+
+        <a class="admin-link secondary" href="/admin/login">
+            Abrir panel de administración
+        </a>
+
+        <p class="notice">
+            Versión de prueba local. Las solicitudes quedan pendientes de
+            revisión. No ingreses datos médicos sensibles ni información
+            personal real.
+        </p>
+    </main>
+
+    <script>
+        const chat = document.getElementById("chat");
+        const form = document.getElementById("chat-form");
+        const input = document.getElementById("message");
+        const sendButton = document.getElementById("send");
+
+        let sessionId = sessionStorage.getItem("recepcionista_session");
+
+        if (!sessionId) {
+            sessionId = (
+                window.crypto && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : "sesion-" + Date.now() + "-" +
+                      Math.random().toString(36).slice(2)
+            );
+            sessionStorage.setItem("recepcionista_session", sessionId);
+        }
+
+        function agregarMensaje(texto, tipo) {
+            const elemento = document.createElement("div");
+            elemento.className = "message " + tipo;
+            elemento.textContent = texto;
+            chat.appendChild(elemento);
+            chat.scrollTop = chat.scrollHeight;
+            return elemento;
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const mensaje = input.value.trim();
+            if (!mensaje) return;
+
+            agregarMensaje(mensaje, "user");
+            input.value = "";
+            input.focus();
+            sendButton.disabled = true;
+
+            const esperando = agregarMensaje("Escribiendo...", "assistant");
+
+            try {
+                const respuesta = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: mensaje,
+                        session_id: sessionId
+                    })
+                });
+
+                const datos = await respuesta.json();
+                esperando.remove();
+
+                if (!respuesta.ok) {
+                    agregarMensaje(
+                        datos.error || "No se pudo procesar el mensaje.",
+                        "assistant"
+                    );
+                } else {
+                    agregarMensaje(datos.reply, "assistant");
+                }
+            } catch (error) {
+                esperando.textContent =
+                    "No pude conectar con el servidor. Verificá que app.py esté ejecutándose.";
+            } finally {
+                sendButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
